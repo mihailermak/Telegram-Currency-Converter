@@ -1,16 +1,21 @@
-# This is a sample Python script.
+#Token: 6183220089:AAF92022c-KAO_EAAcF3_TnsEfg5IxX0Rug
 
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+import logging
+from aiogram import Bot, Dispatcher, types
+from aiogram.utils import executor
 
+#Устанавливаем уровень логирования
+logging.basicConfig(level=logging.INFO)
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
+#Создаем бота и диспетчер
+bot = Bot(token='6183220089:AAF92022c-KAO_EAAcF3_TnsEfg5IxX0Rug')
+dp = Dispatcher(bot)
 
+#Обработка команды /start
+@dp.message_handler(commands=['start'])
+async def send_welcome(message: types.Message):
+    await message.answer("Привет! Я телеграмм бот для конвертации валют. Что будем делать?")
 
-# Press the green button in the gutter to run the script.
+#Запускаем бота
 if __name__ == '__main__':
-    print_hi('PyCharm')
-
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+    executor.start_polling(dp, skip_updates=True)
