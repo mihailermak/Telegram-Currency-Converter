@@ -14,7 +14,14 @@ dp = Dispatcher(bot)
 #Обработка команды /start
 @dp.message_handler(commands=['start'])
 async def send_welcome(message: types.Message):
-    await message.answer("Привет! Я телеграмм бот для конвертации валют. Что будем делать?")
+    #Создаем клавиатуру с двумя кнопками
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    button_conversion = types.KeyboardButton(text="Конвертация")
+    button_settings = types.KeyboardButton(text="Настройки")
+    keyboard.add(button_conversion, button_settings)
+
+    #Отправляем приветственное сообщение с клавиатурой
+    await message.answer("Привет! Я телеграмм бот для конвертации валют. Что будем делать?", reply_markup=keyboard)
 
 #Запускаем бота
 if __name__ == '__main__':
