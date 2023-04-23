@@ -39,13 +39,17 @@ TEXT_FOR_HELP = """
 #Обработка команды /start
 @dp.message_handler(commands=['start'])
 async def send_welcome(message: types.Message):
-    #Создаем клавиатуру с двумя кнопками
+    #Создаем клавиатуру с тремя кнопками
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     button_conversion = types.KeyboardButton(text="конвертация")
     button_settings = types.KeyboardButton(text="настройки")
-    keyboard.add(button_conversion, button_settings)
+    button_help = types.KeyboardButton(text="помощь")
+    keyboard.add(button_conversion, button_settings, button_help)
 
-    #Отправляем приветственное сообщение с клавиатурой
+    #Отправляем приветственный стикер
+    await bot.send_sticker(message.from_user.id, sticker='CAACAgIAAxkBAAEIsshkRVoN6Ub0abVPXUhS6zrxa9aQvgACAQEAAladvQoivp8OuMLmNC8E')
+
+    # Отправляем приветственное сообщение с клавиатурой
     await message.answer("Привет! Я телеграмм бот для конвертации валют. Что будем делать?", reply_markup=keyboard)
 
 #Обработка команды /help
@@ -61,32 +65,46 @@ class UserState(StatesGroup):
 
 #Обработка сообщения конвертация и состояния from_currency
 @dp.message_handler(text='конвертация')
-async def user_register(message: types.Message):
+async def data_for_convertation(message: types.Message):
     await message.answer("Введите валюту, из которой будет проводиться конвертация")
     await UserState.from_currency.set()
 
 #Обработка состояния to_currency
 @dp.message_handler(state=UserState.from_currency)
-async def get_username(message: types.Message, state: FSMContext):
-    await state.update_data(from_currency=message.text)
-    await message.answer("Введите валюту, в которую будет проводиться конвертация")
-    await UserState.next()
+async def get_from_currency(message: types.Message, state: FSMContext):
+    if message.text not in currencies:
+        await message.answer("Такой валюты не существует, либо она не поддерживается. Попробуйте ещё раз.")
+    else:
+        await state.update_data(from_currency=message.text)
+        await message.answer("Введите валюту, в которую будет проводиться конвертация")
+        await UserState.next()
 
 #Обработка состояния amount
 @dp.message_handler(state=UserState.to_currency)
-async def get_username(message: types.Message, state: FSMContext):
-    await state.update_data(to_currency=message.text)
-    await message.answer("Введите сумму для конвертации")
-    await UserState.next()
+async def get_to_currency(message: types.Message, state: FSMContext):
+    data = await state.get_data()
+    if message.text not in currencies:
+        await message.answer("Такой валюты не существует, либо она не поддерживается. Попробуйте ещё раз.")
+
+    else:
+        if message.text == data['from_currency']:
+            await message.answer("Вы ввели одинаковые валюты. Попробуйте ещё раз")
+        else:
+            await state.update_data(to_currency=message.text)
+            await message.answer("Введите сумму для конвертации")
+            await UserState.next()
 
 #Итог и конвертация
 @dp.message_handler(state=UserState.amount)
-async def get_address(message: types.Message, state: FSMContext):
-    await state.update_data(amount=message.text)
-    data = await state.get_data()
-    converted_amount = (int(data['amount']) / rates[data['from_currency']] * rates[data['to_currency']])
-    await message.answer(f"{data['amount']} {data['from_currency']} = {converted_amount} {data['to_currency']}")
-    await state.finish()
+async def get_amount(message: types.Message, state: FSMContext):
+    try:
+        await state.update_data(amount=message.text)
+        data = await state.get_data()
+        converted_amount = (int(data['amount']) / rates[data['from_currency']] * rates[data['to_currency']])
+        await message.answer(f"{data['amount']} {data['from_currency']} = {converted_amount} {data['to_currency']}")
+        await state.finish()
+    except:
+        await message.answer("Вы ввели не число. Попробуйте ещё раз")
 
 #Запускаем бота
 if __name__ == '__main__':
