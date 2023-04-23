@@ -4,6 +4,9 @@ import logging
 import requests
 from aiogram import Bot, Dispatcher, types
 from aiogram.utils import executor
+from aiogram.dispatcher import FSMContext
+from aiogram.contrib.fsm_storage.memory import MemoryStorage
+from aiogram.dispatcher.filters.state import StatesGroup, State
 
 #Запрос к openexchangerates.org
 url = "https://openexchangerates.org/api/latest.json?app_id=36011ff3ad1d4279a3dcd70b5c8ad104"
@@ -13,12 +16,13 @@ rates = response.json()["rates"]
 #Устанавливаем уровень логирования
 logging.basicConfig(level=logging.INFO)
 
-#Создаем бота и диспетчер
+#Создаем бота, хранилище и диспетчер
 bot = Bot(token='6183220089:AAF92022c-KAO_EAAcF3_TnsEfg5IxX0Rug')
-dp = Dispatcher(bot)
+storage = MemoryStorage()
+dp = Dispatcher(bot, storage=storage)
 
 #Список поддерживаемых валют
-currencyies = ('USD', 'EUR', 'RUB', 'GBP', 'AED', 'ANG', 'AMD',
+currencies = ('USD', 'EUR', 'RUB', 'GBP', 'AED', 'ANG', 'AMD',
                'AZN', 'BAM', 'BYN', 'CAD', 'CHF', 'CLP', 'CNY',
                'COP', 'CRC', 'CUP', 'CZK', 'DKK', 'EEK', 'EGP',
                'HKD', 'IDR', 'INR', 'IRR', 'ISK', 'JPY', 'KGS',
@@ -39,11 +43,40 @@ async def send_welcome(message: types.Message):
     #Отправляем приветственное сообщение с клавиатурой
     await message.answer("Привет! Я телеграмм бот для конвертации валют. Что будем делать?", reply_markup=keyboard)
 
+#Создаем класс состояния
+class UserState(StatesGroup):
+    from_currency = State()
+    to_currency = State()
+    amount = State()
+
+#Обработка сообщения о конвертации
 @dp.message_handler(text='конвертация')
-async def convertation(message: types.Message):
-    #Конвертируем валюту
-    converted_amount = (int(100) / rates["USD"] * rates["EUR"])
-    await message.answer(text=(f'{100} {"USD"} = {converted_amount} {"EUR"}'))
+async def user_register(message: types.Message):
+    await message.answer("Из какой валюты конвертировать?")
+    await UserState.from_currency.set()
+
+
+@dp.message_handler(state=UserState.from_currency)
+async def get_username(message: types.Message, state: FSMContext):
+    await state.update_data(username=message.text)
+    await message.answer("В какую валюту конвертировать?")
+    await UserState.to_currency.set()
+
+
+@dp.message_handler(state=UserState.amount)
+async def get_username(message: types.Message, state: FSMContext):
+    await state.update_data(username=message.text)
+    await message.answer("В какую валюту конвертировать?")
+    await UserState.to_currency.set()
+
+
+@dp.message_handler(state=UserState.to_currency)
+async def get_address(message: types.Message, state: FSMContext):
+    await state.update_data(from_currency=message.text)
+    data = await state.get_data()
+    await message.answer("данные получены")
+
+    await state.finish()
 
 #Запускаем бота
 if __name__ == '__main__':
