@@ -36,6 +36,14 @@ TEXT_FOR_HELP = """
 <b>Правильный формат</b> для ввода валют: <em>EUR</em>, <em>USD</em>, <em>RUB</em> и т.п.
 """
 
+#создание функции, для проверки числа на float
+def isfloat(num):
+    try:
+        float(num)
+        return True
+    except ValueError:
+        return False
+
 #Обработка команды /start
 @dp.message_handler(commands=['start'])
 async def send_welcome(message: types.Message):
@@ -43,7 +51,7 @@ async def send_welcome(message: types.Message):
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     button_conversion = types.KeyboardButton(text="конвертация")
     button_settings = types.KeyboardButton(text="настройки")
-    button_help = types.KeyboardButton(text="помощь")
+    button_help = types.KeyboardButton(text="/help")
     keyboard.add(button_conversion, button_settings, button_help)
 
     #Отправляем приветственный стикер
@@ -54,6 +62,11 @@ async def send_welcome(message: types.Message):
 
 #Обработка команды /help
 @dp.message_handler(commands=['help'])
+async def send_welcome(message: types.Message):
+    await message.answer(TEXT_FOR_HELP, parse_mode="HTML")
+
+#Обработка настройки
+@dp.message_handler(text='настройки')
 async def send_welcome(message: types.Message):
     await message.answer(TEXT_FOR_HELP, parse_mode="HTML")
 
@@ -97,15 +110,20 @@ async def get_to_currency(message: types.Message, state: FSMContext):
 #Итог и конвертация
 @dp.message_handler(state=UserState.amount)
 async def get_amount(message: types.Message, state: FSMContext):
-    try:
-        await state.update_data(amount=message.text)
-        data = await state.get_data()
-        converted_amount = (int(data['amount']) / rates[data['from_currency']] * rates[data['to_currency']])
-        await message.answer(f"{data['amount']} {data['from_currency']} = {converted_amount} {data['to_currency']}")
-        await state.finish()
-    except:
+    await state.update_data(amount=message.text)
+    data = await state.get_data()
+    if data['amount'].isdigit() == True or isfloat(data['amount']) == True:
+        try:
+            converted_amount = (int(data['amount']) / rates[data['from_currency']] * rates[data['to_currency']])
+            await message.answer(f"{data['amount']} {data['from_currency']} = {converted_amount} {data['to_currency']}")
+            await state.finish()
+        except:
+            converted_amount = (float(data['amount']) / rates[data['from_currency']] * rates[data['to_currency']])
+            await message.answer(f"{data['amount']} {data['from_currency']} = {converted_amount} {data['to_currency']}")
+            await state.finish()
+    else:
         await message.answer("Вы ввели не число. Попробуйте ещё раз")
 
-#Запускаем бота
+#Запускаем бота, пропуская обновления
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True)
