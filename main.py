@@ -31,6 +31,11 @@ currencies = ('USD', 'EUR', 'RUB', 'GBP', 'AED', 'ANG', 'AMD',
                'SAR', 'SEK', 'SGD', 'SYP', 'THB', 'TJS', 'TMT',
                'TRY', 'UAH', 'USD', 'UZS', 'VES', 'ZAR')
 
+#текст в обработку /help
+TEXT_FOR_HELP = """
+<b>Правильный формат</b> для ввода валют: <em>EUR</em>, <em>USD</em>, <em>RUB</em> и т.п.
+"""
+
 #Обработка команды /start
 @dp.message_handler(commands=['start'])
 async def send_welcome(message: types.Message):
@@ -43,39 +48,44 @@ async def send_welcome(message: types.Message):
     #Отправляем приветственное сообщение с клавиатурой
     await message.answer("Привет! Я телеграмм бот для конвертации валют. Что будем делать?", reply_markup=keyboard)
 
+#Обработка команды /help
+@dp.message_handler(commands=['help'])
+async def send_welcome(message: types.Message):
+    await message.answer(TEXT_FOR_HELP, parse_mode="HTML")
+
 #Создаем класс состояния
 class UserState(StatesGroup):
     from_currency = State()
     to_currency = State()
     amount = State()
 
-#Обработка сообщения о конвертации
+#Обработка сообщения конвертация и состояния from_currency
 @dp.message_handler(text='конвертация')
 async def user_register(message: types.Message):
-    await message.answer("Из какой валюты конвертировать?")
+    await message.answer("Введите валюту, из которой будет проводиться конвертация")
     await UserState.from_currency.set()
 
-
+#Обработка состояния to_currency
 @dp.message_handler(state=UserState.from_currency)
 async def get_username(message: types.Message, state: FSMContext):
-    await state.update_data(username=message.text)
-    await message.answer("В какую валюту конвертировать?")
-    await UserState.to_currency.set()
-
-
-@dp.message_handler(state=UserState.amount)
-async def get_username(message: types.Message, state: FSMContext):
-    await state.update_data(username=message.text)
-    await message.answer("В какую валюту конвертировать?")
-    await UserState.to_currency.set()
-
-
-@dp.message_handler(state=UserState.to_currency)
-async def get_address(message: types.Message, state: FSMContext):
     await state.update_data(from_currency=message.text)
-    data = await state.get_data()
-    await message.answer("данные получены")
+    await message.answer("Введите валюту, в которую будет проводиться конвертация")
+    await UserState.next()
 
+#Обработка состояния amount
+@dp.message_handler(state=UserState.to_currency)
+async def get_username(message: types.Message, state: FSMContext):
+    await state.update_data(to_currency=message.text)
+    await message.answer("Введите сумму для конвертации")
+    await UserState.next()
+
+#Итог и конвертация
+@dp.message_handler(state=UserState.amount)
+async def get_address(message: types.Message, state: FSMContext):
+    await state.update_data(amount=message.text)
+    data = await state.get_data()
+    converted_amount = (int(data['amount']) / rates[data['from_currency']] * rates[data['to_currency']])
+    await message.answer(f"{data['amount']} {data['from_currency']} = {converted_amount} {data['to_currency']}")
     await state.finish()
 
 #Запускаем бота
