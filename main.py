@@ -1,4 +1,4 @@
-#Token: 6183220089:AAF92022c-KAO_EAAcF3_TnsEfg5IxX0Rug
+# Token: 6183220089:AAF92022c-KAO_EAAcF3_TnsEfg5IxX0Rug
 
 import logging
 import requests
@@ -8,20 +8,20 @@ from aiogram.dispatcher import FSMContext
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher.filters.state import StatesGroup, State
 
-#Запрос к openexchangerates.org
+# Запрос к openexchangerates.org
 url = "https://openexchangerates.org/api/latest.json?app_id=36011ff3ad1d4279a3dcd70b5c8ad104"
 response = requests.get(url)
 rates = response.json()["rates"]
 
-#Устанавливаем уровень логирования
+# Устанавливаем уровень логирования
 logging.basicConfig(level=logging.INFO)
 
-#Создаем бота, хранилище и диспетчер
+# Создаем бота, хранилище и диспетчер
 bot = Bot(token='6183220089:AAF92022c-KAO_EAAcF3_TnsEfg5IxX0Rug')
 storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
 
-#Список поддерживаемых валют
+# Список поддерживаемых валют
 currencies = ('USD', 'EUR', 'RUB', 'GBP', 'AED', 'ANG', 'AMD',
                'AZN', 'BAM', 'BYN', 'CAD', 'CHF', 'CLP', 'CNY',
                'COP', 'CRC', 'CUP', 'CZK', 'DKK', 'EEK', 'EGP',
@@ -31,12 +31,12 @@ currencies = ('USD', 'EUR', 'RUB', 'GBP', 'AED', 'ANG', 'AMD',
                'SAR', 'SEK', 'SGD', 'SYP', 'THB', 'TJS', 'TMT',
                'TRY', 'UAH', 'USD', 'UZS', 'VES', 'ZAR')
 
-#текст в обработку /help
+# Текст в обработку /help
 TEXT_FOR_HELP = """
 <b>Правильный формат</b> для ввода валют: <em>EUR</em>, <em>USD</em>, <em>RUB</em> и т.п.
 """
 
-#создание функции, для проверки числа на float
+# Создание функции, для проверки числа на float
 def isfloat(num):
     try:
         float(num)
@@ -44,7 +44,7 @@ def isfloat(num):
     except ValueError:
         return False
 
-#Обработка команды /start
+# Обработка команды /start
 @dp.message_handler(commands=['start'])
 async def send_welcome(message: types.Message):
     #Создаем клавиатуру с тремя кнопками
@@ -54,18 +54,18 @@ async def send_welcome(message: types.Message):
     button_help = types.KeyboardButton(text="/help")
     keyboard.add(button_conversion, button_settings, button_help)
 
-    #Отправляем приветственный стикер
+    # Отправляем приветственный стикер
     await bot.send_sticker(message.from_user.id, sticker='CAACAgIAAxkBAAEIsshkRVoN6Ub0abVPXUhS6zrxa9aQvgACAQEAAladvQoivp8OuMLmNC8E')
 
     # Отправляем приветственное сообщение с клавиатурой
     await message.answer("Привет! Я телеграмм бот для конвертации валют. Что будем делать?", reply_markup=keyboard)
 
-#Обработка команды /help
+# Обработка команды /help
 @dp.message_handler(commands=['help'])
 async def send_welcome(message: types.Message):
     await message.answer(TEXT_FOR_HELP, parse_mode="HTML")
 
-#Обработка настройки
+# Обработка настройки
 @dp.message_handler(text='настройки')
 async def send_welcome(message: types.Message):
     await message.answer(TEXT_FOR_HELP, parse_mode="HTML")
@@ -76,13 +76,13 @@ class UserState(StatesGroup):
     to_currency = State()
     amount = State()
 
-#Обработка сообщения конвертация и состояния from_currency
+# Обработка сообщения конвертация и состояния from_currency
 @dp.message_handler(text='конвертация')
 async def data_for_convertation(message: types.Message):
     await message.answer("Введите валюту, из которой будет проводиться конвертация")
     await UserState.from_currency.set()
 
-#Обработка состояния to_currency
+# Обработка состояния to_currency
 @dp.message_handler(state=UserState.from_currency)
 async def get_from_currency(message: types.Message, state: FSMContext):
     if message.text not in currencies:
@@ -92,7 +92,7 @@ async def get_from_currency(message: types.Message, state: FSMContext):
         await message.answer("Введите валюту, в которую будет проводиться конвертация")
         await UserState.next()
 
-#Обработка состояния amount
+# Обработка состояния amount
 @dp.message_handler(state=UserState.to_currency)
 async def get_to_currency(message: types.Message, state: FSMContext):
     data = await state.get_data()
@@ -107,7 +107,7 @@ async def get_to_currency(message: types.Message, state: FSMContext):
             await message.answer("Введите сумму для конвертации")
             await UserState.next()
 
-#Итог и конвертация
+# Итог и конвертация
 @dp.message_handler(state=UserState.amount)
 async def get_amount(message: types.Message, state: FSMContext):
     await state.update_data(amount=message.text)
@@ -124,6 +124,6 @@ async def get_amount(message: types.Message, state: FSMContext):
     else:
         await message.answer("Вы ввели не число. Попробуйте ещё раз")
 
-#Запускаем бота, пропуская обновления
+# Запускаем бота, пропуская обновления
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True)
